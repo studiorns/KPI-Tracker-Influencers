@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Influencers KPI Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* SONER Logo Animation */
+        @keyframes sonerScan { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes sonerBlip { 0%, 20%, 100% { opacity: 0; } 2%, 15% { opacity: 1; } 3% { transform: scale(1.2); } }
+        
+        /* SONER Logo styles */
+        .soner-logo { display: flex; align-items: center; color: white; font-family: 'Inter', sans-serif; font-size: 28px; font-weight: 300; }
+        .soner-radar { width: 24px; height: 24px; border-radius: 50%; border: 1px solid white; margin: 0 3px; position: relative; background-color: rgba(255, 255, 255, 0.05); overflow: hidden; }
+        .soner-scanner { position: absolute; top: 0; left: 0; width: 100%; height: 100%; animation: sonerScan 4s linear infinite; transform-origin: center; }
+        .soner-scanner::before { content: ''; position: absolute; top: 0; left: 50%; width: 50%; height: 50%; background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.4)); transform-origin: bottom left; clip-path: polygon(0 0, 100% 0, 0 100%); }
+        .soner-scanner::after { content: ''; position: absolute; top: 0; left: 50%; width: 50%; height: 1px; background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 1)); transform-origin: left center; box-shadow: 0 0 4px rgba(255, 255, 255, 0.8); }
+        .soner-blip { position: absolute; width: 2px; height: 2px; background-color: white; border-radius: 50%; opacity: 0; box-shadow: 0 0 4px white; }
+        .soner-blip:nth-child(1) { top: 25%; left: 30%; animation: sonerBlip 4s 1s infinite; }
+        .soner-blip:nth-child(2) { top: 65%; left: 60%; animation: sonerBlip 4s 2.5s infinite; }
+        .soner-tagline { color: white; font-size: 8px; text-transform: uppercase; font-weight: 500; letter-spacing: 0.5em; margin-left: 10px; opacity: 0.8; }
+
+        :root {
+            --primary: #4285f4;
+            --primary-light: #1a2233;
+            --primary-dark: #8ab4f8;
+            --secondary: #34a853;
+            --secondary-light: #1a2a1e;
+            --warning: #fbbc04;
+            --warning-light: #332a1a;
+            --danger: #ea4335;
+            --danger-light: #331f1e;
+            --gray-100: #1e1e1e;
+            --gray-200: #2d2d2d;
+            --gray-300: #3d3d3d;
+            --gray-400: #4d4d4d;
+            --gray-500: #777777;
+            --gray-600: #a0a0a0;
+            --gray-700: #c0c0c0;
+            --gray-800: #e0e0e0;
+            --gray-900: #f0f0f0;
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 6px 12px rgba(0, 0, 0, 0.5);
+            --shadow-lg: 0 15px 25px rgba(0, 0, 0, 0.6);
+            --radius-sm: 4px;
+            --radius: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --transition: all 0.3s ease;
+            --bg-color: #000000;
+            --card-bg: #121212;
+            --section-bg: #181818;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--gray-800);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1a73e8 0%, #174ea6 100%);
+            color: white;
+            padding: 32px 0;
+            text-align: center;
+            margin-bottom: 40px;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQ0MCIgaGVpZ2h0PSI0MDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PGxpbmVhckdyYWRpZW50IHgxPSIxMDAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiIGlkPSJhIj48c3RvcCBzdG9wLWNvbG9yPSIjRkZGIiBzdG9wLW9wYWNpdHk9Ii4wNSIgb2Zmc2V0PSIwJSIvPjxzdG9wIHN0b3AtY29sb3I9IiNGRkYiIHN0b3Atb3BhY2l0eT0iLjAyIiBvZmZzZXQ9IjEwMCUiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cGF0aCBkPSJNMTQ0MCAyMDBjLTEzMS44LTEyLjktMjY3LjgtMTkuNC00MDgtMTkuNC0xNDAuMiAwLTI3Ni4yIDYuNS00MDggMTkuNFYwaDgxNnYyMDB6IiBmaWxsPSJ1cmwoI2EpIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiLz48L3N2Zz4=');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.1;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            position: relative;
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            margin-top: 0;
+            font-weight: 600;
+            line-height: 1.3;
+            color: var(--gray-900);
+        }
+        
+        h2 {
+            font-size: 1.75rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        h3 {
+            font-size: 1.35rem;
+            margin-bottom: 1rem;
+        }
+        
+        h4 {
+            font-size: 1.15rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        p {
+            margin-bottom: 1rem;
+        }
+        
+        .dashboard-section {
+            background-color: var(--section-bg);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow);
+            padding: 28px;
+            margin-bottom: 32px;
+            transition: var(--transition);
+            border: 1px solid var(--gray-300);
+        }
+        
+        .dashboard-section:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+        
+        .dashboard-section h2 {
+            display: flex;
+            align-items: center;
+            border-bottom: 2px solid var(--gray-200);
+            padding-bottom: 16px;
+            margin-bottom: 28px;
+            color: var(--gray-900);
+            font-size: 1.5rem;
+        }
+        
+        .dashboard-section h2 i {
+            margin-right: 12px;
+            color: var(--primary);
+            font-size: 1.25rem;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        
+        .metric-card {
+            background-color: var(--gray-100);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            border: 1px solid var(--gray-200);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background-color: var(--primary);
+            opacity: 0;
+            transition: var(--transition);
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .metric-card:hover::before {
+            opacity: 1;
+        }
+        
+        /* Total Metric Cards */
+        .total-metric-card {
+            background: linear-gradient(135deg, var(--gray-100) 0%, var(--gray-200) 100%);
+            border: 1px solid var(--primary);
+            box-shadow: 0 4px 12px rgba(66, 133, 244, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .total-metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background-color: var(--primary);
+            opacity: 1;
+        }
+        
+        .total-metric-card .metric-name {
+            color: var(--primary-dark);
+            font-size: 1rem;
+            font-weight: 700;
+        }
+        
+        .total-metric-card .metric-value {
+            font-size: 2.5rem;
+            color: white;
+        }
+        
+        .total-metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(66, 133, 244, 0.25);
+        }
+        
+        /* YTD Metric Cards */
+        .ytd-metric-card {
+            background: linear-gradient(135deg, var(--gray-100) 0%, var(--gray-200) 100%);
+            border: 1px solid var(--secondary);
+            box-shadow: 0 4px 12px rgba(52, 168, 83, 0.15);
+        }
+        
+        .ytd-metric-card::before {
+            background-color: var(--secondary);
+        }
+        
+        .ytd-metric-card .metric-name {
+            color: var(--secondary);
+        }
+        
+        .ytd-metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(52, 168, 83, 0.25);
+        }
+        
+        .metric-name {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--gray-600);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .metric-name i {
+            margin-right: 8px;
+            color: var(--primary);
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 12px;
+            line-height: 1.2;
+        }
+        
+        .metric-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .metric-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+        }
+        
+        .stat-label {
+            color: var(--gray-600);
+        }
+        
+        .stat-value {
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        
+        .positive { 
+            background-color: var(--secondary-light); 
+            color: var(--secondary);
+        }
+        
+        .negative { 
+            background-color: var(--danger-light); 
+            color: var(--danger);
+        }
+        
+        .warning {
+            background-color: var(--warning-light);
+            color: var(--warning);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+            margin-bottom: 28px;
+            background-color: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            border: 1px solid var(--gray-300);
+            transition: var(--transition);
+        }
+        
+        .chart-container:hover {
+            box-shadow: var(--shadow-md);
+        }
+        
+        /* Charts row for horizontal layout */
+        .charts-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .charts-row .chart-container {
+            flex: 1;
+            min-width: 300px;
+            margin-bottom: 0;
+        }
+        
+        .tab-container {
+            margin-top: 24px;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            border-bottom: 1px solid var(--gray-300);
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+        
+        .tab-btn {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--gray-600);
+            border-radius: var(--radius) var(--radius) 0 0;
+            transition: var(--transition);
+            position: relative;
+            font-size: 0.95rem;
+        }
+        
+        .tab-btn::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--primary);
+            transform: scaleX(0);
+            transition: var(--transition);
+        }
+        
+        .tab-btn:hover {
+            color: var(--primary);
+        }
+        
+        .tab-btn.active {
+            color: var(--primary);
+        }
+        
+        .tab-btn.active::after {
+            transform: scaleX(1);
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 8px 0 24px;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .insight-summary {
+            background-color: var(--primary-light);
+            border-left: 4px solid var(--primary);
+            padding: 20px 24px;
+            margin-bottom: 28px;
+            border-radius: 0 var(--radius) var(--radius) 0;
+            position: relative;
+        }
+        
+        .insight-summary::before {
+            content: '\f0eb';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 20px;
+            right: 24px;
+            font-size: 1.5rem;
+            color: var(--primary);
+            opacity: 0.2;
+        }
+        
+        .insight-summary h3 {
+            color: var(--primary-dark);
+            margin-bottom: 12px;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .insight-summary h3 i {
+            margin-right: 10px;
+        }
+        
+        .insight-summary p {
+            margin: 0;
+            color: var(--gray-800);
+            font-size: 1.05rem;
+            line-height: 1.6;
+        }
+        
+        .print-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(66, 133, 244, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            z-index: 1000;
+        }
+        
+        .print-btn:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 6px 16px rgba(66, 133, 244, 0.5);
+        }
+        
+        /* Section Collapsible Styles */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--gray-200);
+            padding-bottom: 16px;
+        }
+        
+        .section-title {
+            display: flex;
+            align-items: center;
+            color: var(--gray-900);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .section-title i {
+            margin-right: 12px;
+            color: var(--primary);
+            font-size: 1.25rem;
+        }
+        
+        .section-content {
+            max-height: 5000px;
+            overflow: hidden;
+            transition: max-height 0.8s ease, opacity 0.5s ease;
+            opacity: 1;
+        }
+        
+        .section-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        
+        .section-toggle {
+            background: transparent;
+            border: none;
+            color: var(--primary);
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            padding: 0;
+        }
+        
+        .section-toggle:hover {
+            background-color: rgba(66, 133, 244, 0.1);
+            transform: scale(1.1);
+        }
+        
+        .section-toggle:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.3);
+        }
+        
+        .section-toggle i {
+            transition: transform 0.3s ease;
+            font-size: 16px;
+        }
+        
+        .section-toggle.collapsed i {
+            transform: rotate(-180deg);
+        }
+        
+        /* Skeleton Loader */
+        .skeleton {
+            background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+        }
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .metric-card .metric-value.skeleton {
+            height: 40px;
+            width: 100px;
+            border-radius: var(--radius-sm);
+        }
+        
+        @media (max-width: 768px) {
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .tab-buttons {
+                flex-direction: column;
+            }
+            
+            .tab-btn {
+                width: 100%;
+                text-align: left;
+                padding: 12px;
+                border-radius: 0;
+            }
+            
+            .print-btn {
+                bottom: 20px;
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+                right: 20px;
+            }
+            
+            .container {
+                padding: 0 16px;
+            }
+            
+            .dashboard-section {
+                padding: 20px;
+                margin-bottom: 24px;
+            }
+            
+            .chart-container {
+                height: 350px;
+                padding: 16px;
+            }
+            
+            /* Stack charts vertically on mobile */
+            .charts-row {
+                flex-direction: column;
+            }
+            
+            .charts-row .chart-container {
+                width: 100%;
+                margin-bottom: 28px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .dashboard-section h2 {
+                font-size: 1.3rem;
+            }
+            
+            .metric-value {
+                font-size: 1.6rem;
+            }
+            
+            .chart-container {
+                height: 300px;
+                padding: 12px;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+        }
+        
+        @media print {
+            body {
+                background-color: white;
+            }
+            
+            .dashboard-section {
+                box-shadow: none;
+                break-inside: avoid;
+            }
+            
+            .print-btn {
+                display: none;
+            }
+            
+            .tab-content {
+                display: block !important;
+            }
+            
+            .tab-buttons {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 15px;">
+                <div class="soner-logo">
+                    S<div class="soner-radar">
+                        <div class="soner-scanner"></div>
+                        <div class="soner-blip"></div>
+                        <div class="soner-blip"></div>
+                    </div>NER
+                    <span class="soner-tagline">Visual Intelligence</span>
+                </div>
+            </div>
+            <h1>Influencers KPI Dashboard</h1>
+            <p>Q1 2025 Performance Analysis</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h2 class="section-title"><i class="fas fa-chart-pie"></i> Total Metrics</h2>
+                <button class="section-toggle" aria-label="Toggle section" aria-expanded="true">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+            </div>
+            <div class="section-content">
+                <div class="insight-summary">
+                    <h3><i class="fas fa-lightbulb"></i> Total Performance</h3>
+                    <p>Aggregated metrics across Influencer initiatives showing total influencer visits, publications, impressions, EMV, and engagement with comparisons to forecast, MoM, and YTD performance.</p>
+                </div>
+                
+                <div class="metrics-grid" id="total-metrics-container">
+                    <!-- Total metric cards will be dynamically populated here -->
+                    <div class="metric-card">
+                        <div class="metric-name"><i class="fas fa-spinner fa-spin"></i> Loading total metrics...</div>
+                        <div class="metric-value">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dashboard-section">
+            <div class="section-header">
+                <h2 class="section-title"><i class="fas fa-tachometer-alt"></i> Performance Overview</h2>
+                <button class="section-toggle" aria-label="Toggle section" aria-expanded="true">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+            </div>
+            <div class="section-content">
+            <div class="insight-summary">
+                <h3><i class="fas fa-lightbulb"></i> Key Insights</h3>
+                <p>Influencer initiatives are performing above forecast across most metrics in Q1 2025. Influencer visits exceeded forecast by 92.2%, publications by 64.2%, and impressions by 17.1%. EMV (USD) is slightly above forecast at 0.3%, while engagement is significantly above forecast at 48.7%.</p>
+            </div>
+            
+            <div class="metrics-grid" id="metrics-container">
+                <!-- Metric cards will be dynamically populated here -->
+                <div class="metric-card">
+                    <div class="metric-name"><i class="fas fa-spinner fa-spin"></i> Loading metrics...</div>
+                    <div class="metric-value">-</div>
+                </div>
+            </div>
+            </div>
+        </div>
+        
+        <div class="dashboard-section" id="monthly-trends">
+            <div class="section-header">
+                <h2 class="section-title"><i class="fas fa-chart-line"></i> Monthly Trends</h2>
+                <button class="section-toggle" aria-label="Toggle section" aria-expanded="true">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+            </div>
+            <div class="section-content">
+            
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="influencer-visits">Influencer Visits</button>
+                    <button class="tab-btn" data-tab="publications">Publications</button>
+                    <button class="tab-btn" data-tab="impressions">Impressions</button>
+                    <button class="tab-btn" data-tab="emv-usd">EMV (USD)</button>
+                    <button class="tab-btn" data-tab="engagement">Engagement</button>
+                </div>
+                
+                <div class="tab-content active" id="influencer-visits-tab">
+                    <div class="chart-container">
+                        <canvas id="influencer-visits-trend-chart" data-lazy="true"></canvas>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="publications-tab">
+                    <div class="chart-container">
+                        <canvas id="publications-trend-chart" data-lazy="true"></canvas>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="impressions-tab">
+                    <div class="chart-container">
+                        <canvas id="impressions-trend-chart" data-lazy="true"></canvas>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="emv-usd-tab">
+                    <div class="chart-container">
+                        <canvas id="emv-usd-trend-chart" data-lazy="true"></canvas>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="engagement-tab">
+                    <div class="chart-container">
+                        <canvas id="engagement-trend-chart" data-lazy="true"></canvas>
+                    </div>
+                </div>
+            </div>
+            </div>
+        </div>
+        
+        <div class="dashboard-section" id="ytd-achievement">
+            <div class="section-header">
+                <h2 class="section-title"><i class="fas fa-bullseye"></i> YTD Achievement</h2>
+                <button class="section-toggle" aria-label="Toggle section" aria-expanded="true">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+            </div>
+            <div class="section-content">
+                <div class="chart-container">
+                    <canvas id="ytd-achievement-chart" data-lazy="true"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dashboard-section" id="initiative-details">
+            <div class="section-header">
+                <h2 class="section-title"><i class="fas fa-chart-bar"></i> Initiative Details</h2>
+                <button class="section-toggle" aria-label="Toggle section" aria-expanded="true">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+            </div>
+            <div class="section-content">
+                <div class="tab-container">
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" data-tab="influencers">Influencers</button>
+                    </div>
+                    
+                    <div class="tab-content active" id="influencers-tab">
+                        <h3>Influencers Performance</h3>
+                        <div class="charts-row">
+                            <div class="chart-container">
+                                <canvas id="initiative-cards-influencers-influencer-visits-chart" data-lazy="true"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="initiative-cards-influencers-publications-chart" data-lazy="true"></canvas>
+                            </div>
+                        </div>
+                        <div class="charts-row">
+                            <div class="chart-container">
+                                <canvas id="initiative-cards-influencers-impressions-chart" data-lazy="true"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="initiative-cards-influencers-emv-usd-chart" data-lazy="true"></canvas>
+                            </div>
+                        </div>
+                        <div class="charts-row">
+                            <div class="chart-container">
+                                <canvas id="initiative-cards-influencers-engagement-chart" data-lazy="true"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <button class="print-btn" title="Print Dashboard" id="print-dashboard">
+        <i class="fas fa-print"></i>
+    </button>
+    
+    <!-- CSV Data -->
+    <script>
+        // CSV data embedded directly to avoid CORS issues with local files
+        const csvData = `﻿Key,Initiative Cards,Sub Initiative,Metric,Month,Actual,Forecast,YTD Actual Totals,YTD Forecast Totals,,,,,,,,,,,,,,
+Initiative Cards-Influencers-Influencer Visits-January,Initiative Cards,Influencers,Influencer Visits,January,212,103,212,103,,,,,,,,,,,,,,
+Initiative Cards-Influencers-Influencer Visits-February,Initiative Cards,Influencers,Influencer Visits,February,236,103,448,206,,,,,,,,,,,,,,
+Initiative Cards-Influencers-Influencer Visits-March,Initiative Cards,Influencers,Influencer Visits,March,121,90,569,296,,,,,,,,,,,,,,
+Initiative Cards-Influencers-Influencer Visits-April,Initiative Cards,Influencers,Influencer Visits,April,,52,569,348,,,,,,,,,,,,,,
+Initiative Cards-Influencers-Influencer Visits-May,Initiative Cards,Influencers,Influencer Visits,May,,64,569,412,,,,,,,,,,,,,,
+Initiative Cards-Influencers-Influencer Visits-June,Initiative Cards,Influencers,Influencer Visits,June,,90,569,502,,,,,,,,,,,,,,
+Initiative Cards-Influencers-Influencer Visits-July,Initiative Cards,Influencers,Influencer Visits,July,,90,569,592,,,,,,,,,,,,,,
+Initiative Cards-Influencers-Influencer Visits-August,Initiative Cards,Influencers,Influencer Visits,August,,90,569,683,,,,,,,,,,,,,,
+Initiative Cards-Influencers-Influencer Visits-September,Initiative Cards,Influencers,Influencer Visits,September,,116,569,799,,,,,,,,,,,,,,
+Initiative Cards-Influencers-Influencer Visits-October,Initiative Cards,Influencers,Influencer Visits,October,,168,569,966,,,,,,,,,,,,,,
+Initiative Cards-Influencers-Influencer Visits-November,Initiative Cards,Influencers,Influencer Visits,November,,155,569,"1,121",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Influencer Visits-December,Initiative Cards,Influencers,Influencer Visits,December,,168,569,"1,289",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Publications-January,Initiative Cards,Influencers,Publications,January,"4,054","2,858","4,054","2,858",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Publications-February,Initiative Cards,Influencers,Publications,February,"4,794","2,858","8,848","5,715",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Publications-March,Initiative Cards,Influencers,Publications,March,"4,641","2,500","13,489","8,216",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Publications-April,Initiative Cards,Influencers,Publications,April,,"1,072","13,489","9,287",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Publications-May,Initiative Cards,Influencers,Publications,May,,"1,429","13,489","10,716",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Publications-June,Initiative Cards,Influencers,Publications,June,,"2,858","13,489","13,574",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Publications-July,Initiative Cards,Influencers,Publications,July,,"2,500","13,489","16,074",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Publications-August,Initiative Cards,Influencers,Publications,August,,"2,858","13,489","18,932",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Publications-September,Initiative Cards,Influencers,Publications,September,,"3,215","13,489","22,146",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Publications-October,Initiative Cards,Influencers,Publications,October,,"5,001","13,489","27,147",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Publications-November,Initiative Cards,Influencers,Publications,November,,"4,286","13,489","31,434",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Publications-December,Initiative Cards,Influencers,Publications,December,,"4,286","13,489","35,720",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Impressions-January,Initiative Cards,Influencers,Impressions,January,"769,182,168","708,008,000","769,182,168","708,008,000",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Impressions-February,Initiative Cards,Influencers,Impressions,February,"681,166,195","708,008,000","1,450,348,363","1,416,016,000",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Impressions-March,Initiative Cards,Influencers,Impressions,March,"933,331,300","619,507,000","2,383,679,663","2,035,523,000",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Impressions-April,Initiative Cards,Influencers,Impressions,April,,"354,004,000","2,383,679,663","2,389,527,000",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Impressions-May,Initiative Cards,Influencers,Impressions,May,,"354,004,000","2,383,679,663","2,743,531,000",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Impressions-June,Initiative Cards,Influencers,Impressions,June,,"619,507,000","2,383,679,663","3,363,038,000",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Impressions-July,Initiative Cards,Influencers,Impressions,July,,"531,006,000","2,383,679,663","3,894,044,000",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Impressions-August,Initiative Cards,Influencers,Impressions,August,,"708,008,000","2,383,679,663","4,602,052,000",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Impressions-September,Initiative Cards,Influencers,Impressions,September,,"796,509,000","2,383,679,663","5,398,561,000",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Impressions-October,Initiative Cards,Influencers,Impressions,October,,"1,194,763,500","2,383,679,663","6,593,324,500",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Impressions-November,Initiative Cards,Influencers,Impressions,November,,"1,106,262,500","2,383,679,663","7,699,587,000",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Impressions-December,Initiative Cards,Influencers,Impressions,December,,"1,150,513,000","2,383,679,663","8,850,100,000",,,,,,,,,,,,,,
+Initiative Cards-Influencers-EMV (USD)-January,Initiative Cards,Influencers,EMV (USD),January,"19,121,184","20,989,000","19,121,184","20,989,000",,,,,,,,,,,,,,
+Initiative Cards-Influencers-EMV (USD)-February,Initiative Cards,Influencers,EMV (USD),February,"14,870,083","20,989,000","33,991,267","41,978,000",,,,,,,,,,,,,,
+Initiative Cards-Influencers-EMV (USD)-March,Initiative Cards,Influencers,EMV (USD),March,"26,541,494","18,365,375","60,532,761","60,343,375",,,,,,,,,,,,,,
+Initiative Cards-Influencers-EMV (USD)-April,Initiative Cards,Influencers,EMV (USD),April,,"10,494,500","60,532,761","70,837,875",,,,,,,,,,,,,,
+Initiative Cards-Influencers-EMV (USD)-May,Initiative Cards,Influencers,EMV (USD),May,,"10,494,500","60,532,761","81,332,375",,,,,,,,,,,,,,
+Initiative Cards-Influencers-EMV (USD)-June,Initiative Cards,Influencers,EMV (USD),June,,"20,989,000","60,532,761","102,321,375",,,,,,,,,,,,,,
+Initiative Cards-Influencers-EMV (USD)-July,Initiative Cards,Influencers,EMV (USD),July,,"15,741,750","60,532,761","118,063,125",,,,,,,,,,,,,,
+Initiative Cards-Influencers-EMV (USD)-August,Initiative Cards,Influencers,EMV (USD),August,,"20,989,000","60,532,761","139,052,125",,,,,,,,,,,,,,
+Initiative Cards-Influencers-EMV (USD)-September,Initiative Cards,Influencers,EMV (USD),September,,"23,612,625","60,532,761","162,664,750",,,,,,,,,,,,,,
+Initiative Cards-Influencers-EMV (USD)-October,Initiative Cards,Influencers,EMV (USD),October,,"34,107,125","60,532,761","196,771,875",,,,,,,,,,,,,,
+Initiative Cards-Influencers-EMV (USD)-November,Initiative Cards,Influencers,EMV (USD),November,,"31,483,500","60,532,761","228,255,375",,,,,,,,,,,,,,
+Initiative Cards-Influencers-EMV (USD)-December,Initiative Cards,Influencers,EMV (USD),December,,"34,107,125","60,532,761","262,362,500",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Engagement-January,Initiative Cards,Influencers,Engagement,January,"12,478,484","9,105,120","12,478,484","9,105,120",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Engagement-February,Initiative Cards,Influencers,Engagement,February,"8,711,383","9,105,120","21,189,867","18,210,240",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Engagement-March,Initiative Cards,Influencers,Engagement,March,"17,734,061","7,966,980","38,923,928","26,177,220",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Engagement-April,Initiative Cards,Influencers,Engagement,April,,"4,552,560","38,923,928","30,729,780",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Engagement-May,Initiative Cards,Influencers,Engagement,May,,"4,552,560","38,923,928","35,282,340",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Engagement-June,Initiative Cards,Influencers,Engagement,June,,"7,966,980","38,923,928","43,249,320",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Engagement-July,Initiative Cards,Influencers,Engagement,July,,"6,828,840","38,923,928","50,078,160",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Engagement-August,Initiative Cards,Influencers,Engagement,August,,"9,105,120","38,923,928","59,183,280",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Engagement-September,Initiative Cards,Influencers,Engagement,September,,"10,243,260","38,923,928","69,426,540",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Engagement-October,Initiative Cards,Influencers,Engagement,October,,"15,364,890","38,923,928","84,791,430",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Engagement-November,Initiative Cards,Influencers,Engagement,November,,"14,226,750","38,923,928","99,018,180",,,,,,,,,,,,,,
+Initiative Cards-Influencers-Engagement-December,Initiative Cards,Influencers,Engagement,December,,"14,795,820","38,923,928","113,814,000",,,,,,,,,,,,,,`;
+    </script>
+    
+    <!-- Tab functionality -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up tab switching
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Get the tab to show
+                    const tabToShow = this.getAttribute('data-tab');
+                    
+                    // Hide all tabs and remove active class from buttons
+                    const tabContainer = this.closest('.tab-container');
+                    tabContainer.querySelectorAll('.tab-content').forEach(tab => {
+                        tab.classList.remove('active');
+                    });
+                    
+                    tabContainer.querySelectorAll('.tab-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    
+                    // Show the selected tab and add active class to button
+                    document.getElementById(tabToShow + '-tab').classList.add('active');
+                    this.classList.add('active');
+                });
+            });
+            
+            // Print functionality
+            document.getElementById('print-dashboard').addEventListener('click', function() {
+                window.print();
+            });
+        });
+    </script>
+    
+    <!-- Lazy Loading for Charts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const lazyCharts = document.querySelectorAll('canvas[data-lazy="true"]');
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const canvas = entry.target;
+                        const chartId = canvas.id;
+                        // Initialize the chart when it becomes visible
+                        initializeChart(chartId);
+                        observer.unobserve(canvas);
+                    }
+                });
+            });
+
+            lazyCharts.forEach(chart => observer.observe(chart));
+
+            function initializeChart(chartId) {
+                // Example chart initialization logic
+                console.log(`Initializing chart: ${chartId}`);
+                // Add your chart.js initialization code here
+            }
+        });
+    </script>
+    
+    <!-- Load JavaScript files -->
+    <script src="Influencers.js"></script>
+    <script src="populateMetricCards.js"></script>
+    <script src="createCharts.js"></script>
+    <script src="collapsible.js"></script>
+    
+    <!-- Initialize dashboard -->
+    <script>
+        // Wait for the page to load and then initialize the dashboard
+        window.addEventListener('load', function() {
+            console.log('Page loaded, initializing dashboard...');
+            try {
+                // Show loading indicator
+                document.getElementById('metrics-container').innerHTML = `
+                    <div class="metric-card">
+                        <div class="metric-name"><i class="fas fa-spinner fa-spin"></i> Loading data...</div>
+                        <div class="metric-value">Please wait</div>
+                        <div class="metric-stats">
+                            <div class="metric-stat">
+                                <span class="stat-label">Processing the latest data</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                if (window.dashboardFunctions && typeof window.dashboardFunctions.initializeDashboard === 'function') {
+                    window.dashboardFunctions.initializeDashboard(csvData);
+                    console.log('Dashboard initialized successfully with latest data');
+                } else {
+                    console.error('Dashboard functions not available');
+                    document.getElementById('metrics-container').innerHTML = `
+                        <div class="metric-card">
+                            <div class="metric-name"><i class="fas fa-exclamation-triangle"></i> Error</div>
+                            <div class="metric-value">Dashboard functions not available</div>
+                            <div class="metric-stats">
+                                <div class="metric-stat">
+                                    <span class="stat-label">Please check if Influencers.js is loaded correctly.</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+                document.getElementById('metrics-container').innerHTML = `
+                    <div class="metric-card">
+                        <div class="metric-name"><i class="fas fa-exclamation-triangle"></i> Error</div>
+                        <div class="metric-value">Failed to initialize dashboard</div>
+                        <div class="metric-stats">
+                            <div class="metric-stat">
+                                <span class="stat-label">Please try again later or contact support.</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
